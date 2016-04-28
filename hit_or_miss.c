@@ -40,6 +40,7 @@ void create_log_file();
 void init(int, char **);
 int get_depth(char *);
 int read_input(char *);
+int hit, miss;
 void run();
 ///////////////////////////////////
 
@@ -89,19 +90,44 @@ int check_num_arg(int argc)
 		return 2;
 	}
 }
+////////////////////////////////
+//PSEUDOCODE CREATE_LOG_FILE()
+//1.) OPEN A LOG CALLED LOG.TXT WITH WRITE PERMISSIONS
+////////////////////////////////
 void create_log_file()
 {
+	//1.)
 	log_file = fopen("log.txt", "w+");
 	fprintf(log_file, "Log created, Program running...\n");
 }
+/////////////////////////////////
+//PSEUDOCODE GET_DEPTH()
+//1.) GET THE DEPTH VALUE THAT WILL BE USED TO DETERMINE HOW MANY BYTES WILL BE SCANNED
+//    
+/////////////////////////////////
 int get_depth(char *num_args)
 {
 	return atoi(num_args); 
 }
+////////////////////////////////
+//PSUEDOCODE INIT()
+//1.) INITIALIZE THE HIT AND MISS VARIABLES TO ZERO
+//2.) EXECUTE CREATE_LOG_FILE() FUNCTION TO BEGIN LOGGING DEBUGGING AND EVENT INFORMATION
+//3.) EXECUTE THE CHECK_NUM_ARG() FUNCTION THAT WILL ENSURE THE CORRECT NUMBER OF ARGUMENTS
+//    ARE PRESENT.  IF NOT ENOUGH ARGUMENTS ARE INCLUDED THEN PROGRAM WILL TERMINATE WITH ERROR
+//    CODE 2.
+//4.) IF THE NUMBER OF ARGUMENTS CHECKS OUT, THEN GOO
+////////////////////////////////
 void init(int argc, char *argv[])
 {
+	//1.) 
+	hit = 0;
+	miss = 0;
+
+	//2.) 
 	create_log_file();
-	
+
+	//3.)	
 	int arg_test_int = check_num_arg(argc);
 	if(arg_test_int == 0)
 	{	
@@ -119,6 +145,7 @@ void init(int argc, char *argv[])
 	}
 	
 
+	//4.)
 	int infile_exist_int = read_input(argv[1]);
 	if(infile_exist_int == FILE_EXIST)
 	{
