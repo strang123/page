@@ -1,6 +1,5 @@
 #include <stdio.h> //fileinput(), printf(), 
 #include <stdlib.h> //exit()
-#include <linux/sched.h> //task_struct
 
 #define FILE_EXIST 0
 #define FILE_NOT_EXIST 1
@@ -31,7 +30,6 @@ address_struct *address_head_node;
 int depth_int;
 FILE *log_file;
 struct task_struct *process_struct;
-
 ///////////////////////////////////
 //PROTOTYPES
 ///////////////////////////////////
@@ -44,24 +42,10 @@ void run();
 ///////////////////////////////////
 
 ////////////////////////////////////
-//ORDER OF OPERATIONS
-//1.) MAIN() 
-//	A.)INIT()
-//		I.) CREATE_LOG_FILE()
-//		II.) CHECK_NUM_ARG()
-//		ii 
-//		
-//   
-////////////////////////////////////
-
-
-
-////////////////////////////////////
 //PSUEDOCODE MAIN()
-//1.) EXECUTE INIT() FUNCTION THAT WILL CREATE A LOG AND READ THE INPUT FILE AND 
-//    STORE THE HEX ADDRESS DATA IN A STRUCT OF TYPE INFILE_DATA 
-//    WITH NAMESPACE ADDRESS_STRUCT.
-//2.) THEN EXECUTES RUN() THE PROGRAM
+//1.) BEGIN AN INIT() FUNCTION THAT WILL CREATE A LOG AND READ THE INPUT FILE AND 
+//    STORE THE DATA IN A UNION DATA STRUCTURE.
+//2.) THEN RUN() THE PROGRAM
 ///////////////////////////////////
 void main(int argc, char *argv[])
 {
@@ -70,19 +54,12 @@ void main(int argc, char *argv[])
 	//2.)
 	run();
 }
-////////////////////////////////////
-//PSUEDOCODE CHECK_NUM_ARG()
-//1.) THERE SHOULD BE THREE ARGUMENTS
-//2.) IF NOT WILL RETURN A 2.
-/////////////////////////////////////
 int check_num_arg(int argc)
 {
-	//1.)
 	if(argc == 3)
 	{
 		return 0;
 	}
-	//2.)
 	else
 	{
 		fprintf(stderr, "Not enough arguments, please try again\n");
@@ -168,7 +145,6 @@ int read_input(char* file)
 				new_node->next_address_ptr = NULL;
 			}
 		}
-		fclose(infile_fileptr);
 		#if DEBUG==1
 		address_struct *new_node = address_head_node;
 		while(new_node)	
@@ -185,5 +161,5 @@ int read_input(char* file)
 }
 void run()
 {
-	//printf("tester %lu\n",process_struct.count);	
+	
 }
