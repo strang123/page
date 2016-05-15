@@ -1,9 +1,10 @@
 #include <stdio.h> //fileinput(), printf(), 
 #include <stdlib.h> //exit()
-#include <linux/sched.h> //task_struct
+#include <string.h> //memset
 
 #define FILE_EXIST 0
 #define FILE_NOT_EXIST 1
+#define SINGLE_HEX_BYTE 8
 ////////////////////////////////////
 //CONVENTIONS
 //1.)NO PLURAL NAMESPACES
@@ -28,17 +29,22 @@ typedef struct infile_data
 	struct infile_data *next_address_ptr;		
 }address_struct;
 address_struct *address_head_node;
-int depth_int;
+int depth_int, page_size;
 FILE *log_file;
 struct task_struct *process_struct;
 
+typedef struct page_table
+{
+					
+}p_table;
 ///////////////////////////////////
-//PROTOTYPES
+//FUNCTION PROTOTYPES
 ///////////////////////////////////
 int check_num_arg(int);
 void create_log_file();
 void init(int, char **);
 int get_depth(char *);
+int get_page(char *);
 int read_input(char *);
 int hit, miss;
 void run();
@@ -51,7 +57,7 @@ void run();
 //		I.) CREATE_LOG_FILE()
 //		II.) CHECK_NUM_ARG()
 //		ii 
-//		
+//	B.)RUN()		
 //   
 ////////////////////////////////////
 
@@ -79,7 +85,7 @@ void main(int argc, char *argv[])
 int check_num_arg(int argc)
 {
 	//1.)
-	if(argc == 3)
+	if(argc == 4)
 	{
 		return 0;
 	}
@@ -109,6 +115,11 @@ int get_depth(char *num_args)
 {
 	return atoi(num_args); 
 }
+
+int get_page(char *num_args)
+{
+	return atoi(num_args); 
+}
 ////////////////////////////////
 //PSUEDOCODE INIT()
 //1.) INITIALIZE THE HIT AND MISS VARIABLES TO ZERO
@@ -135,7 +146,7 @@ void init(int argc, char *argv[])
 	}
 	else if(arg_test_int == 2)
 	{
-		fprintf(stderr, "Please use the following format:\n./hit_or_miss <file.txt> <depth>\n");
+		fprintf(stderr, "Please use the following format:\n./hit_or_miss <file.txt> <depth> <page size>\n");
 		exit(2);
 	}
 	else if(arg_test_int == 3)
@@ -157,6 +168,7 @@ void init(int argc, char *argv[])
 		exit(1);
 	}
 	depth_int = get_depth(argv[2]);
+	page_size = get_page(argv[3]);
 	fprintf(log_file, "Number of addresses to linearly travers:%d\n", depth_int);
 }
 int read_input(char* file)
@@ -212,5 +224,28 @@ int read_input(char* file)
 }
 void run()
 {
-	//printf("tester %lu\n",process_struct.count);	
+	int test_array[5];
+	memset(&test_array, 0, sizeof(test_array));
+	address_struct *test_node = address_head_node;
+	while(test_node)	
+	{	
+		int test_int = test_node->address_int;
+		for(int i = 0; i < 5; i++)
+		{
+			for(int j = 0; j < depth_int; j = j + SINGLE_HEX_BYTE)
+			{
+				if(test_array[i] == test_int)
+				{
+					printf("yay\n");
+				}
+				else if(i == 4)
+				{
+					test_array[rand()%5] = test_int;	
+				}
+				test_int = test_int + SINGLE_HEX_BYTE;
+				//printf("%#x is test_int and %#x is array\n", test_int, test_array[i]);
+			}
+		}
+		test_node = test_node->next_address_ptr;
+	}
 }
