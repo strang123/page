@@ -275,7 +275,7 @@ void run()
 				{
 					printf("yay\n");
 				}
-				else if(i == 4)
+				else if(i == num_entry_int-1)
 				{
 					test_array[rand()%5] = test_int;	
 				}
