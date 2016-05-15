@@ -1,9 +1,10 @@
 #include <stdio.h> //fileinput(), printf(), 
 #include <stdlib.h> //exit()
-#include <string.h> //memset
+#include <string.h> //memset()
 
 #define FILE_EXIST 0
 #define FILE_NOT_EXIST 1
+#define INSTRUCTION_SIZE 32
 #define SINGLE_HEX_BYTE 8
 ////////////////////////////////////
 //CONVENTIONS
@@ -29,10 +30,12 @@ typedef struct infile_data
 	struct infile_data *next_address_ptr;		
 }address_struct;
 address_struct *address_head_node;
-int depth_int, page_size;
+int bit_counter_int;
+int depth_int;
 FILE *log_file;
+int num_entry_int;
 struct task_struct *process_struct;
-
+int page_size_int;
 typedef struct page_table
 {
 					
@@ -43,6 +46,7 @@ typedef struct page_table
 int check_num_arg(int);
 void create_log_file();
 void init(int, char **);
+int get_bit_count(int);
 int get_depth(char *);
 int get_page(char *);
 int read_input(char *);
@@ -106,19 +110,50 @@ void create_log_file()
 	log_file = fopen("log.txt", "w+");
 	fprintf(log_file, "Log created, Program running...\n");
 }
+int get_bit_count(int page_arg)
+{
+	
+	if(page_arg == 2)
+	{
+		return bit_counter_int;
+	}
+	else
+	{
+		bit_counter_int++;
+		return get_bit_count(page_arg/2);
+	}
+}
 /////////////////////////////////
 //PSEUDOCODE GET_DEPTH()
 //1.) GET THE DEPTH VALUE THAT WILL BE USED TO DETERMINE HOW MANY BYTES WILL BE SCANNED
 //    
 /////////////////////////////////
 int get_depth(char *num_args)
-{
-	return atoi(num_args); 
+{ 
+	int return_int = atoi(num_args);
+	if(return_int%INSTRUCTION_SIZE != 0)
+	{
+		fprintf(stderr, "Page depth is incompatible\n");
+		exit(1);
+	}
+	else
+	{
+		return return_int; 
+	}
 }
 
 int get_page(char *num_args)
 {
-	return atoi(num_args); 
+	int return_int = atoi(num_args);
+	if(return_int%INSTRUCTION_SIZE != 0)
+	{
+		fprintf(stderr, "Page size is incompatible\n");
+		exit(1);
+	}
+	else
+	{
+		return return_int; 
+	}
 }
 ////////////////////////////////
 //PSUEDOCODE INIT()
@@ -168,8 +203,9 @@ void init(int argc, char *argv[])
 		exit(1);
 	}
 	depth_int = get_depth(argv[2]);
-	page_size = get_page(argv[3]);
-	fprintf(log_file, "Number of addresses to linearly travers:%d\n", depth_int);
+	page_size_int = get_page(argv[3]);
+	num_entry_int = INSTRUCTION_SIZE - get_bit_count(page_size_int) - 1;
+	fprintf(log_file, "Number of addresses to linearly traverse: %d\n", depth_int);
 }
 int read_input(char* file)
 {	
@@ -224,7 +260,8 @@ int read_input(char* file)
 }
 void run()
 {
-	int test_array[5];
+	
+	int test_array[num_entry_int];
 	memset(&test_array, 0, sizeof(test_array));
 	address_struct *test_node = address_head_node;
 	while(test_node)	
