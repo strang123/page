@@ -267,7 +267,7 @@ void run()
 	while(test_node)	
 	{	
 		int test_int = test_node->address_int;
-		for(int i = 0; i < 5; i++)
+		for(int i = 0; i < num_entry_int; i++)
 		{
 			for(int j = 0; j < depth_int; j = j + SINGLE_HEX_BYTE)
 			{
