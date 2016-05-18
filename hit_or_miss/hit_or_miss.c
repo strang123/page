@@ -4,8 +4,7 @@
 #include <sys/time.h> //gettimeofday()
 #include <time.h>
 
-#define FILE_EXIST 0
-#define FILE_NOT_EXIST 1
+#define ING_PROGRAM 1
 #define INSTRUCTION_SIZE 32
 #define SINGLE_HEX_BYTE 8
 ////////////////////////////////////
@@ -16,12 +15,6 @@
 //4.)VARIABLES AND FUNCTIONS ARE ALL ALPHEBETICAL
 //5.)MAIN() IS AT THE TOP
 ////////////////////////////////////
-///////////////////////////////////
-//RETURN VALUES
-//1.) 0=NOMINAL
-//2.) 1=NO_FILE_INPUT
-//3.) 2=WRONG NUMBER OF ARGUMENTS
-//4.) 3=FAILED TO CREATE A POINTER
 ///////////////////////////////////
 ///////////////////////////////////
 //DATA
@@ -54,8 +47,9 @@ int get_bit_count(int);
 int get_depth(char *);
 int get_page(char *);
 int get_time();
+void kill_error(char *);
 int num_of_bits();
-int read_input(char *);
+void read_input(char *);
 void run();
 ///////////////////////////////////
 
@@ -98,15 +92,12 @@ int check_number_of_argument(int argc)
 	//1.)
 	if(argc == 4)
 	{
-		fprintf(log_file, "Correct Number of arguments detected\n");
 		return 0;
 	}
 	//2.)
 	else
 	{
-		fprintf(stderr, "Not enough arguments, please try again\n");
-		fprintf(stderr, "Please use the following format:\n./hit_or_miss <file.txt> <depth> <page size>\n");
-		exit(1);
+		kill_error("Not enough arguments, please try again\nPlease use the following format:\n./hit_or_miss <file.txt> <depth> <page size>\n");
 	}
 }
 ////////////////////////////////
@@ -141,8 +132,7 @@ int get_depth(char *num_args)
 	int return_int = atoi(num_args);
 	if(return_int%INSTRUCTION_SIZE != 0)
 	{
-		fprintf(stderr, "Page depth is incompatible\n");
-		exit(1);
+		kill_error("Page depth is incompatible\n");
 	}
 	else
 	{
@@ -154,8 +144,7 @@ int get_page(char *num_args)
 	int return_int = atoi(num_args);
 	if(return_int%INSTRUCTION_SIZE != 0)
 	{
-		fprintf(stderr, "Page size is incompatible\n");
-		exit(1);
+		kill_error("Page size is incompatible\n");
 	}
 	else
 	{
@@ -188,27 +177,22 @@ void initialize_everything(int argc, char *argv[])
 	check_number_of_argument(argc);
 
 	//4.)
-	int infile_exist_int = read_input(argv[1]);
-	if(infile_exist_int == FILE_EXIST)
-	{
-		fprintf(log_file, "Valid input file detected, parsing...\n");
-	}
-	else if(infile_exist_int == FILE_NOT_EXIST)
-	{	
-		fprintf(stderr, "No file provided\n");
-		exit(1);
-	}
+	read_input(argv[1]);
+	
 	depth_int = get_depth(argv[2]);
 	page_size_int = get_page(argv[3]);
-	//num_entry_int = INSTRUCTION_SIZE - get_bit_count(page_size_int) - 1;
 	num_entry_int = num_of_bits();
-	fprintf(log_file, "Number of addresses to linearly traverse: %d\n", depth_int);
+}
+void kill_error(char *message)
+{
+	fprintf(stderr,"%s",message);
+	exit(ING_PROGRAM);
 }
 int num_of_bits()
 {
 	return INSTRUCTION_SIZE - get_bit_count(page_size_int) - 1;
 }
-int read_input(char* file)
+void read_input(char* file)
 {	
 	FILE *infile_fileptr;
 	if(file != NULL)
@@ -220,14 +204,14 @@ int read_input(char* file)
 			address_struct *current_node = (struct infile_data *)malloc(sizeof(struct infile_data));
 			if(new_node == NULL || current_node == NULL)
 			{	
-				return 3;		
+				kill_error("Could not create nodes from the address struct.\n");		
 			}
 			if(address_head_node == NULL)
 			{
 				address_head_node = (struct infile_data *)malloc(sizeof(struct infile_data));
 				if(address_head_node == NULL)
 				{
-					return 3;		
+					kill_error("Could not create nodes from the address head node");
 				}
 				fscanf(infile_fileptr, "%x", &address_head_node->address_int);
 				address_head_node->next_address_ptr = NULL;
@@ -257,7 +241,7 @@ int read_input(char* file)
 	}
 	else
 	{
-		return 1;
+		kill_error("Failed to create a file pointer.\n");
 	}			
 }
 //void run()
