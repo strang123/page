@@ -1,8 +1,7 @@
 #include <stdio.h> //fileinput(), printf(), 
 #include <stdlib.h> //exit()
 #include <string.h> //memset()
-#include <sys/time.h> //gettimeofday()
-#include <time.h>
+#include <time.h> //clock()
 
 #define ING_PROGRAM 1
 #define INSTRUCTION_SIZE 32
@@ -35,7 +34,9 @@ struct task_struct *process_struct;
 int page_size_int;
 typedef struct lru_data
 {
-	struct lru_data *head, *tail;				
+	int address_int;
+	long double time_long_double;
+	struct lru_data *head, *tail;					
 }lru_struct;
 ///////////////////////////////////
 //FUNCTION PROTOTYPES
@@ -46,7 +47,7 @@ void initialize_everything(int, char **);
 int get_bit_count(int);
 int get_depth(char *);
 int get_page(char *);
-int get_time();
+long double get_time();
 void kill_error(char *);
 int num_of_bits();
 void read_input(char *);
@@ -151,9 +152,9 @@ int get_page(char *num_args)
 		return return_int; 
 	}
 }
-int get_time()
+long double get_time()
 {
-	return 0;
+	return clock();
 }
 ////////////////////////////////
 //PSUEDOCODE INIT()
@@ -276,8 +277,7 @@ void read_input(char* file)
 void run()
 {
 	
-	int test_array[10];
-	memset(&test_array, 0, sizeof(test_array));
+	lru_struct *tlb;
 	address_struct *test_node = address_head_node;
 	while(test_node)	
 	{	
