@@ -1,6 +1,8 @@
 #include <stdio.h> //fileinput(), printf(), 
 #include <stdlib.h> //exit()
 #include <string.h> //memset()
+#include <sys/time.h> //gettimeofday()
+#include <time.h>
 
 #define FILE_EXIST 0
 #define FILE_NOT_EXIST 1
@@ -32,25 +34,28 @@ typedef struct infile_data
 address_struct *address_head_node;
 int bit_counter_int;
 int depth_int;
+int hit;
 FILE *log_file;
+int miss;
 int num_entry_int;
 struct task_struct *process_struct;
 int page_size_int;
-typedef struct page_table
+typedef struct lru_data
 {
-					
-}p_table;
+	struct lru_data *head, *tail;				
+}lru_struct;
 ///////////////////////////////////
 //FUNCTION PROTOTYPES
 ///////////////////////////////////
-int check_num_arg(int);
-void create_log_file();
-void init(int, char **);
+int check_number_of_argument(int);
+void create_a_logfile();
+void initialize_everything(int, char **);
 int get_bit_count(int);
 int get_depth(char *);
 int get_page(char *);
+int get_time();
+int num_of_bits();
 int read_input(char *);
-int hit, miss;
 void run();
 ///////////////////////////////////
 
@@ -77,42 +82,45 @@ void run();
 void main(int argc, char *argv[])
 {
 	//1.)
-	init(argc, argv);
+	initialize_everything(argc, argv);
 	//2.)
-	run();
+	//run();
+	get_time();
+	
 }
 ////////////////////////////////////
-//PSUEDOCODE CHECK_NUM_ARG()
+//PSUEDOCODE GET_NUMBER_OF_ARGUMENT()
 //1.) THERE SHOULD BE THREE ARGUMENTS
 //2.) IF NOT WILL RETURN A 2.
 /////////////////////////////////////
-int check_num_arg(int argc)
+int check_number_of_argument(int argc)
 {
 	//1.)
 	if(argc == 4)
 	{
+		fprintf(log_file, "Correct Number of arguments detected\n");
 		return 0;
 	}
 	//2.)
 	else
 	{
 		fprintf(stderr, "Not enough arguments, please try again\n");
-		return 2;
+		fprintf(stderr, "Please use the following format:\n./hit_or_miss <file.txt> <depth> <page size>\n");
+		exit(1);
 	}
 }
 ////////////////////////////////
 //PSEUDOCODE CREATE_LOG_FILE()
 //1.) OPEN A LOG CALLED LOG.TXT WITH WRITE PERMISSIONS
 ////////////////////////////////
-void create_log_file()
+void create_a_logfile()
 {
 	//1.)
 	log_file = fopen("log.txt", "w+");
 	fprintf(log_file, "Log created, Program running...\n");
 }
 int get_bit_count(int page_arg)
-{
-	
+{	
 	if(page_arg == 2)
 	{
 		return bit_counter_int;
@@ -141,7 +149,6 @@ int get_depth(char *num_args)
 		return return_int; 
 	}
 }
-
 int get_page(char *num_args)
 {
 	int return_int = atoi(num_args);
@@ -155,6 +162,10 @@ int get_page(char *num_args)
 		return return_int; 
 	}
 }
+int get_time()
+{
+	return 0;
+}
 ////////////////////////////////
 //PSUEDOCODE INIT()
 //1.) INITIALIZE THE HIT AND MISS VARIABLES TO ZERO
@@ -164,32 +175,17 @@ int get_page(char *num_args)
 //    CODE 2.
 //4.) IF THE NUMBER OF ARGUMENTS CHECKS OUT, THEN GOO
 ////////////////////////////////
-void init(int argc, char *argv[])
+void initialize_everything(int argc, char *argv[])
 {
 	//1.) 
 	hit = 0;
 	miss = 0;
 
 	//2.) 
-	create_log_file();
+	create_a_logfile();
 
 	//3.)	
-	int arg_test_int = check_num_arg(argc);
-	if(arg_test_int == 0)
-	{	
-		fprintf(log_file, "Correct Number of arguments detected\n");
-	}
-	else if(arg_test_int == 2)
-	{
-		fprintf(stderr, "Please use the following format:\n./hit_or_miss <file.txt> <depth> <page size>\n");
-		exit(2);
-	}
-	else if(arg_test_int == 3)
-	{	
-		fprintf(stderr, "Failed to create temp pointer to address_struct\n");
-		exit(3);
-	}
-	
+	check_number_of_argument(argc);
 
 	//4.)
 	int infile_exist_int = read_input(argv[1]);
@@ -204,8 +200,13 @@ void init(int argc, char *argv[])
 	}
 	depth_int = get_depth(argv[2]);
 	page_size_int = get_page(argv[3]);
-	num_entry_int = INSTRUCTION_SIZE - get_bit_count(page_size_int) - 1;
+	//num_entry_int = INSTRUCTION_SIZE - get_bit_count(page_size_int) - 1;
+	num_entry_int = num_of_bits();
 	fprintf(log_file, "Number of addresses to linearly traverse: %d\n", depth_int);
+}
+int num_of_bits()
+{
+	return INSTRUCTION_SIZE - get_bit_count(page_size_int) - 1;
 }
 int read_input(char* file)
 {	
@@ -244,6 +245,7 @@ int read_input(char* file)
 			}
 		}
 		fclose(infile_fileptr);
+
 		#if DEBUG==1
 		address_struct *new_node = address_head_node;
 		while(new_node)	
@@ -258,16 +260,45 @@ int read_input(char* file)
 		return 1;
 	}			
 }
+//void run()
+//{
+//	
+//	int test_array[num_entry_int];
+//	int test_array[10];
+//	memset(&test_array, 0, sizeof(test_array));
+//	address_struct *test_node = address_head_node;
+//	while(test_node)	
+//	{	
+//		int test_int = test_node->address_int;
+//		for(int i = 0; i < num_entry_int; i++)
+//		{
+//			for(int j = 0; j < depth_int; j = j + SINGLE_HEX_BYTE)
+//			{
+//				if(test_array[i] == test_int)
+//				{
+//					printf("yay\n");
+//				}
+//				else if(i == num_entry_int-1)
+//				{
+//					test_array[rand()%5] = test_int;	
+//				}
+//				test_int = test_int + SINGLE_HEX_BYTE;
+//				//printf("%#x is test_int and %#x is array\n", test_int, test_array[i]);
+//			}
+//		}
+//		test_node = test_node->next_address_ptr;
+//	}
+
 void run()
 {
 	
-	int test_array[num_entry_int];
+	int test_array[10];
 	memset(&test_array, 0, sizeof(test_array));
 	address_struct *test_node = address_head_node;
 	while(test_node)	
 	{	
 		int test_int = test_node->address_int;
-		for(int i = 0; i < num_entry_int; i++)
+		for(int i = 0; i < 10; i++)
 		{
 			for(int j = 0; j < depth_int; j = j + SINGLE_HEX_BYTE)
 			{
