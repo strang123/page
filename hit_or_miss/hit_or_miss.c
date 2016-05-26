@@ -3,6 +3,7 @@
 #include <string.h> //memset()
 #include <time.h> //clock()
 
+#define EMPTY 0
 #define ING_PROGRAM 1
 #define INSTRUCTION_SIZE 32
 #define SINGLE_HEX_BYTE 8
@@ -23,31 +24,38 @@ typedef struct infile_data
 	int address_int;
 	struct infile_data *next_address_ptr;		
 }address_struct;
-address_struct *address_head_node;
-int bit_counter_int;
-int depth_int;
-int hit;
-FILE *log_file;
-int miss;
-int num_entry_int;
-struct task_struct *process_struct;
-int page_size_int;
-typedef struct lru_data
+typedef struct cache_data
 {
 	int address_int;
-	long double time_long_double;
-	struct lru_data *head, *tail;					
-}lru_struct;
+//	int index_int;
+	struct cache_data *head, *tail;					
+}cache_struct;
+///////////////////////////////////
+//DATA VARIABLES
+///////////////////////////////////
+address_struct *address_head_node;
+int bit_counter_int;
+cache_struct *cache_head_node;
+int cache_size_int;
+int depth_int;
+int hit_int;
+FILE *log_file;
+int miss_int;
+int number_of_logical_bits;
+int page_size_int;
+int shift_amount;
 ///////////////////////////////////
 //FUNCTION PROTOTYPES
 ///////////////////////////////////
 int check_number_of_argument(int);
 void create_a_logfile();
+void create_cache(int);
 void initialize_everything(int, char **);
 int get_bit_count(int);
+int get_cache_size(char *);
 int get_depth(char *);
 int get_page(char *);
-long double get_time();
+//long double get_time();
 void kill_error(char *);
 int num_of_bits();
 void read_input(char *);
@@ -79,8 +87,7 @@ void main(int argc, char *argv[])
 	//1.)
 	initialize_everything(argc, argv);
 	//2.)
-	//run();
-	get_time();
+	run();
 	
 }
 ////////////////////////////////////
@@ -91,14 +98,14 @@ void main(int argc, char *argv[])
 int check_number_of_argument(int argc)
 {
 	//1.)
-	if(argc == 4)
+	if(argc == 5)
 	{
 		return 0;
 	}
 	//2.)
 	else
 	{
-		kill_error("Not enough arguments, please try again\nPlease use the following format:\n./hit_or_miss <file.txt> <depth> <page size>\n");
+		kill_error("Not enough arguments, please try again\nPlease use the following format:\n./hit_or_miss <file.txt> <depth in power of 2> <page size in power of 2> <cach size in integer>\n");
 	}
 }
 ////////////////////////////////
@@ -110,6 +117,45 @@ void create_a_logfile()
 	//1.)
 	log_file = fopen("log.txt", "w+");
 	fprintf(log_file, "Log created, Program running...\n");
+}
+void create_cache(int size_arg)
+{
+	for(int i=0; i < cache_size_int; i++)
+	{
+		if(cache_head_node == NULL)
+		{
+			cache_head_node = (struct cache_data *)malloc(sizeof(struct cache_data));
+			cache_head_node->address_int = 0;
+			//cache_head_node->index_int = i;
+			cache_head_node->head = NULL;
+			cache_head_node->tail = NULL;
+		}
+		else
+		{
+			cache_struct *new_node = (struct cache_data *)malloc(sizeof(struct cache_data));
+			cache_struct *current_node = (struct cache_data *)malloc(sizeof(struct cache_data));
+			current_node = cache_head_node;
+			while(current_node->head != NULL)
+			{
+				current_node = current_node->head;
+			}
+			new_node->address_int = 0;
+			//new_node->index_int = i;
+			current_node->head = new_node;
+			new_node->head = NULL;
+		}
+	}
+	#if DEBUG==1
+	cache_struct *print_node = cache_head_node;
+	fprintf(log_file,"\nInitial Stack\n-------------\n");
+	while(print_node)
+	{
+	//	fprintf(log_file, "[index=%d][address=%d]\n", print_node->index_int,print_node->address_int);
+		fprintf(log_file, "[address=%d]\n", print_node->address_int);
+		print_node = print_node->head;
+	}
+	fprintf(log_file,"\n");
+	#endif
 }
 int get_bit_count(int page_arg)
 {	
@@ -123,14 +169,19 @@ int get_bit_count(int page_arg)
 		return get_bit_count(page_arg/2);
 	}
 }
+int get_cache_size(char *cache_arg)
+{
+	int return_int = atoi(cache_arg);
+	return return_int;	
+}
 /////////////////////////////////
 //PSEUDOCODE GET_DEPTH()
 //1.) GET THE DEPTH VALUE THAT WILL BE USED TO DETERMINE HOW MANY BYTES WILL BE SCANNED
 //    
 /////////////////////////////////
-int get_depth(char *num_args)
+int get_depth(char *num_arg)
 { 
-	int return_int = atoi(num_args);
+	int return_int = atoi(num_arg);
 	if(return_int%INSTRUCTION_SIZE != 0)
 	{
 		kill_error("Page depth is incompatible\n");
@@ -152,10 +203,10 @@ int get_page(char *num_args)
 		return return_int; 
 	}
 }
-long double get_time()
-{
-	return clock();
-}
+//long double get_time()
+//{
+//	return clock();
+//}
 ////////////////////////////////
 //PSUEDOCODE INIT()
 //1.) INITIALIZE THE HIT AND MISS VARIABLES TO ZERO
@@ -168,8 +219,8 @@ long double get_time()
 void initialize_everything(int argc, char *argv[])
 {
 	//1.) 
-	hit = 0;
-	miss = 0;
+	hit_int = 0;
+	miss_int = 0;
 
 	//2.) 
 	create_a_logfile();
@@ -182,7 +233,14 @@ void initialize_everything(int argc, char *argv[])
 	
 	depth_int = get_depth(argv[2]);
 	page_size_int = get_page(argv[3]);
-	num_entry_int = num_of_bits();
+	cache_size_int = get_cache_size(argv[4]);
+	number_of_logical_bits = num_of_bits();
+	shift_amount = INSTRUCTION_SIZE-number_of_logical_bits;
+	create_cache(cache_size_int);
+		
+	#if DEBUG==1
+	fprintf(log_file, "The number of logical address bits is %d\nThe number to shift is %d\n", number_of_logical_bits,shift_amount);
+	#endif
 }
 void kill_error(char *message)
 {
@@ -214,7 +272,7 @@ void read_input(char* file)
 				{
 					kill_error("Could not create nodes from the address head node");
 				}
-				fscanf(infile_fileptr, "%x", &address_head_node->address_int);
+				fscanf(infile_fileptr, "%x\n", &address_head_node->address_int);
 				address_head_node->next_address_ptr = NULL;
 			}
 			else
@@ -232,10 +290,11 @@ void read_input(char* file)
 		fclose(infile_fileptr);
 
 		#if DEBUG==1
+		fprintf(log_file, "The input file consists of the following:\n");
 		address_struct *new_node = address_head_node;
 		while(new_node)	
 		{	
-			printf("%#x\n", new_node->address_int);
+			fprintf(log_file, "%#x\n", new_node->address_int);
 			new_node = new_node->next_address_ptr;
 		}
 		#endif
@@ -245,59 +304,53 @@ void read_input(char* file)
 		kill_error("Failed to create a file pointer.\n");
 	}			
 }
-//void run()
-//{
-//	
-//	int test_array[num_entry_int];
-//	int test_array[10];
-//	memset(&test_array, 0, sizeof(test_array));
-//	address_struct *test_node = address_head_node;
-//	while(test_node)	
-//	{	
-//		int test_int = test_node->address_int;
-//		for(int i = 0; i < num_entry_int; i++)
-//		{
-//			for(int j = 0; j < depth_int; j = j + SINGLE_HEX_BYTE)
-//			{
-//				if(test_array[i] == test_int)
-//				{
-//					printf("yay\n");
-//				}
-//				else if(i == num_entry_int-1)
-//				{
-//					test_array[rand()%5] = test_int;	
-//				}
-//				test_int = test_int + SINGLE_HEX_BYTE;
-//				//printf("%#x is test_int and %#x is array\n", test_int, test_array[i]);
-//			}
-//		}
-//		test_node = test_node->next_address_ptr;
-//	}
-
 void run()
 {
-	
-	lru_struct *tlb;
+	cache_struct *cache_node, *insert_at_zero_node;
 	address_struct *test_node = address_head_node;
 	while(test_node)	
 	{	
-		int test_int = test_node->address_int;
-		for(int i = 0; i < 10; i++)
+		cache_node = cache_head_node;
+		insert_at_zero_node = (struct cache_data *)malloc(sizeof(struct cache_data));
+		int test_int = test_node->address_int>>shift_amount;		
+		while(cache_node)
 		{
-			for(int j = 0; j < depth_int; j = j + SINGLE_HEX_BYTE)
+			if(test_int == cache_node->address_int)
 			{
-				/*f(test_array[i] == test_int)
-				{
-					printf("yay\n");
-				}
-				else if(i == num_entry_int-1)
-				{
-					test_array[rand()%5] = test_int;	
-				}*/
-				test_int = test_int + SINGLE_HEX_BYTE;
-				//printf("%#x is test_int and %#x is array\n", test_int, test_array[i]);
+				hit_int++;
+				break;
 			}
+			else
+			{
+				
+				if(cache_node->address_int == EMPTY)
+				{
+					cache_node->address_int = test_int; 
+					miss_int++;			
+					break;		
+				}
+				else
+				{
+					insert_at_zero_node->address_int = test_int;
+					miss_int++;
+					break;			
+				}
+			}
+			cache_node = cache_node->head;
 		}
 		test_node = test_node->next_address_ptr;
+		
+		#if DEBUG==1
+		cache_struct *print_node = cache_head_node;
+		fprintf(log_file,"\nStack after %d\n-------------\n",test_int);
+		while(print_node)
+		{
+			//fprintf(log_file, "[index=%d][address=%d]\n", print_node->index_int,print_node->address_int);
+			fprintf(log_file, "[address=%d]\n", print_node->address_int);
+			print_node = print_node->head;
+		}
+		fprintf(log_file,"\n");
+		#endif
 	}
+	printf("Number of hits %d and number of misses %d\n",hit_int, miss_int); 
 }
