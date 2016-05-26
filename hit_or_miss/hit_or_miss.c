@@ -286,14 +286,14 @@ void run()
 		{
 			for(int j = 0; j < depth_int; j = j + SINGLE_HEX_BYTE)
 			{
-				if(test_array[i] == test_int)
+				/*f(test_array[i] == test_int)
 				{
 					printf("yay\n");
 				}
 				else if(i == num_entry_int-1)
 				{
 					test_array[rand()%5] = test_int;	
-				}
+				}*/
 				test_int = test_int + SINGLE_HEX_BYTE;
 				//printf("%#x is test_int and %#x is array\n", test_int, test_array[i]);
 			}
