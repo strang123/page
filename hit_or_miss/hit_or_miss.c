@@ -27,8 +27,7 @@ typedef struct infile_data
 typedef struct cache_data
 {
 	int address_int;
-//	int index_int;
-	struct cache_data *head, *tail;					
+	struct cache_data *head;					
 }cache_struct;
 ///////////////////////////////////
 //DATA VARIABLES
@@ -126,9 +125,7 @@ void create_cache(int size_arg)
 		{
 			cache_head_node = (struct cache_data *)malloc(sizeof(struct cache_data));
 			cache_head_node->address_int = 0;
-			//cache_head_node->index_int = i;
 			cache_head_node->head = NULL;
-			cache_head_node->tail = NULL;
 		}
 		else
 		{
@@ -140,7 +137,6 @@ void create_cache(int size_arg)
 				current_node = current_node->head;
 			}
 			new_node->address_int = 0;
-			//new_node->index_int = i;
 			current_node->head = new_node;
 			new_node->head = NULL;
 		}
@@ -150,8 +146,7 @@ void create_cache(int size_arg)
 	fprintf(log_file,"\nInitial Stack\n-------------\n");
 	while(print_node)
 	{
-	//	fprintf(log_file, "[index=%d][address=%d]\n", print_node->index_int,print_node->address_int);
-		fprintf(log_file, "[address=%d]\n", print_node->address_int);
+		fprintf(log_file, "[address=%#x]\n", print_node->address_int);
 		print_node = print_node->head;
 	}
 	fprintf(log_file,"\n");
@@ -306,23 +301,41 @@ void read_input(char* file)
 }
 void run()
 {
-	cache_struct *cache_node, *insert_at_zero_node;
+	cache_struct *cache_node, *insert_at_zero_node, *last_node_for_deletion, *second_to_last_for_deletion, *second_node;
 	address_struct *test_node = address_head_node;
+	int found = 0;
 	while(test_node)	
 	{	
 		cache_node = cache_head_node;
+		second_node = cache_head_node;
 		insert_at_zero_node = (struct cache_data *)malloc(sizeof(struct cache_data));
+		last_node_for_deletion = cache_head_node;
+		second_to_last_for_deletion = cache_head_node;
+		while(last_node_for_deletion)
+		{
+			last_node_for_deletion = last_node_for_deletion->head;
+		}
+		while(second_to_last_for_deletion->head->head)
+		{
+			second_to_last_for_deletion = second_to_last_for_deletion->head;
+		}
 		int test_int = test_node->address_int>>shift_amount;		
 		while(cache_node)
 		{
 			if(test_int == cache_node->address_int)
 			{
 				hit_int++;
+				found = 1;
 				break;
 			}
-			else
-			{
-				
+			cache_node = cache_node->head;
+		}
+		if(found == 0)
+		{
+			cache_node = cache_head_node;
+		
+			while(cache_node)
+			{	
 				if(cache_node->address_int == EMPTY)
 				{
 					cache_node->address_int = test_int; 
@@ -332,23 +345,30 @@ void run()
 				else
 				{
 					insert_at_zero_node->address_int = test_int;
+					insert_at_zero_node->head = second_node;
+					cache_head_node = insert_at_zero_node;
+					second_to_last_for_deletion->head = NULL;
+					free(last_node_for_deletion);
 					miss_int++;
 					break;			
 				}
+				cache_node = cache_node->head;
 			}
-			cache_node = cache_node->head;
 		}
 		test_node = test_node->next_address_ptr;
+		found = 0;
 		
 		#if DEBUG==1
+		int counter = 0;
 		cache_struct *print_node = cache_head_node;
 		fprintf(log_file,"\nStack after %d\n-------------\n",test_int);
 		while(print_node)
 		{
-			//fprintf(log_file, "[index=%d][address=%d]\n", print_node->index_int,print_node->address_int);
-			fprintf(log_file, "[address=%d]\n", print_node->address_int);
+			fprintf(log_file, "[address=%#x]\n", print_node->address_int);
 			print_node = print_node->head;
+			counter++;
 		}
+		fprintf(log_file, "TOTAL =%d\n",counter);
 		fprintf(log_file,"\n");
 		#endif
 	}
