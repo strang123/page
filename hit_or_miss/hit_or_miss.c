@@ -301,13 +301,14 @@ void read_input(char* file)
 }
 void run()
 {
-	cache_struct *cache_node, *insert_at_zero_node, *last_node_for_deletion, *second_to_last_for_deletion, *second_node;
+	cache_struct *cache_node, *insert_at_zero_node, *last_node_for_deletion, *second_to_last_for_deletion, *second_node, *prev_node;
 	address_struct *test_node = address_head_node;
 	int found = 0;
 	while(test_node)	
 	{	
 		cache_node = cache_head_node;
 		second_node = cache_head_node;
+		prev_node = (struct cache_data *)malloc(sizeof(struct cache_data));
 		insert_at_zero_node = (struct cache_data *)malloc(sizeof(struct cache_data));
 		last_node_for_deletion = cache_head_node;
 		second_to_last_for_deletion = cache_head_node;
@@ -322,12 +323,25 @@ void run()
 		int test_int = test_node->address_int>>shift_amount;		
 		while(cache_node)
 		{
-			if(test_int == cache_node->address_int)
+			if(test_int == cache_node->address_int && prev_node->head == NULL)
 			{
 				hit_int++;
+				fprintf(log_file, "!HIT!\n");
 				found = 1;
 				break;
 			}
+			else if(test_int == cache_node->address_int)
+			{
+				hit_int++;
+				found = 1;
+				insert_at_zero_node->address_int = test_int;
+				insert_at_zero_node->head = second_node;
+				prev_node->head = cache_node->head;
+				cache_head_node = insert_at_zero_node;
+				fprintf(log_file, "!HIT!\n");
+				break;
+			}
+			prev_node = cache_node;
 			cache_node = cache_node->head;
 		}
 		if(found == 0)
@@ -361,7 +375,7 @@ void run()
 		#if DEBUG==1
 		int counter = 0;
 		cache_struct *print_node = cache_head_node;
-		fprintf(log_file,"\nStack after %d\n-------------\n",test_int);
+		fprintf(log_file,"Stack after %#x\n-------------\n",test_int);
 		while(print_node)
 		{
 			fprintf(log_file, "[address=%#x]\n", print_node->address_int);
