@@ -1,21 +1,11 @@
 #include <stdio.h> //fileinput(), printf(), 
 #include <stdlib.h> //exit()
 #include <string.h> //memset()
-#include <time.h> //clock()
 
 #define EMPTY 0
 #define ING_PROGRAM 1
 #define INSTRUCTION_SIZE 32
 #define SINGLE_HEX_BYTE 8
-////////////////////////////////////
-//CONVENTIONS
-//1.)NO PLURAL NAMESPACES
-//2.)ALL VARIABLES ARE APPENDED WITH DATA TYPE DESIGNATOR EXAMPLE) int example_int = 0;
-//3.)CONTROL FLOW IF STATEMENTS IDEALLY CHECK FOR THE AFFIRMATIVE
-//4.)VARIABLES AND FUNCTIONS ARE ALL ALPHEBETICAL
-//5.)MAIN() IS AT THE TOP
-////////////////////////////////////
-///////////////////////////////////
 ///////////////////////////////////
 //DATA
 ///////////////////////////////////
@@ -104,7 +94,7 @@ int check_number_of_argument(int argc)
 	//2.)
 	else
 	{
-		kill_error("Not enough arguments, please try again\nPlease use the following format:\n./hit_or_miss <file.txt> <depth in power of 2> <page size in power of 2> <cach size in integer>\n");
+		kill_error("Not enough arguments, please try again\nPlease use the following format:\n./hit_or_miss <file.txt> <depth in power of 2> <page size in power of 2> <cach size in integer>\nExample) ./hit_or_miss 256 4096 128\n");
 	}
 }
 ////////////////////////////////
@@ -167,7 +157,14 @@ int get_bit_count(int page_arg)
 int get_cache_size(char *cache_arg)
 {
 	int return_int = atoi(cache_arg);
-	return return_int;	
+	if(return_int > 1)
+	{
+		return return_int;	
+	}
+	else
+	{
+		kill_error("Page size needs to be greater than 1\n");
+	} 
 }
 /////////////////////////////////
 //PSEUDOCODE GET_DEPTH()
@@ -223,16 +220,16 @@ void initialize_everything(int argc, char *argv[])
 	//3.)	
 	check_number_of_argument(argc);
 
-	//4.)
-	read_input(argv[1]);
-	
 	depth_int = get_depth(argv[2]);
 	page_size_int = get_page(argv[3]);
 	cache_size_int = get_cache_size(argv[4]);
 	number_of_logical_bits = num_of_bits();
 	shift_amount = INSTRUCTION_SIZE-number_of_logical_bits;
-	create_cache(cache_size_int);
 		
+	//4.)
+	read_input(argv[1]);
+	
+	create_cache(cache_size_int);
 	#if DEBUG==1
 	fprintf(log_file, "The number of logical address bits is %d\nThe number to shift is %d\n", number_of_logical_bits,shift_amount);
 	#endif
@@ -268,6 +265,8 @@ void read_input(char* file)
 					kill_error("Could not create nodes from the address head node");
 				}
 				fscanf(infile_fileptr, "%x\n", &address_head_node->address_int);
+				
+				address_head_node->address_int = address_head_node->address_int>>shift_amount;
 				address_head_node->next_address_ptr = NULL;
 			}
 			else
@@ -278,6 +277,7 @@ void read_input(char* file)
 					current_node = current_node->next_address_ptr;
 				}
 				fscanf(infile_fileptr, "%x\n", &new_node->address_int);
+				new_node->address_int = new_node->address_int>>shift_amount;
 				current_node->next_address_ptr = new_node;
 				new_node->next_address_ptr = NULL;
 			}
@@ -320,7 +320,7 @@ void run()
 		{
 			second_to_last_for_deletion = second_to_last_for_deletion->head;
 		}
-		int test_int = test_node->address_int>>shift_amount;		
+		int test_int = test_node->address_int;		
 		while(cache_node)
 		{
 			if(test_int == cache_node->address_int && prev_node->head == NULL)
