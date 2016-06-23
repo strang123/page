@@ -1,6 +1,7 @@
 #include <stdio.h> 	//open(),close(), printf()
 #include <stdlib.h> 	//exit()
 #include <string.h> 	//memset()
+#include <stdbool.h>
 
 #define EMPTY 0
 #define PROGRAM 1
@@ -23,11 +24,11 @@ typedef struct pagetable_struct
 	struct pagetable_struct *pagetable_ptr;
 }pagetable_data;
 inputfile_data *inputfile_head;
-pagetable_data *pagetable_head; 
+pagetable_data *pagetable_head, *pagetable_tail; 
 int hit_int = 0;
 int miss_int = 0;
 FILE *logfile_ptr;
-char *instruction_message = "Not enough arguments, please try again\nPlease use the following format:\n./hit_or_miss <file.txt> <depth in power of 2> <page size in power of 2> <cach size in integer>\nExample) ./hit_or_miss 256 4096 128\n";
+char *instruction_message = "Not enough arguments, please try again\nPlease use the following format:\n./hit_or_miss <file.txt> <depth in power of 2> <page size in power of 2> <cach size in integer>\nExample) ./hit_or_miss wr128_random-1.txt 256 4096 128\n";
 int bytedepth_int;
 int pagesize_int;
 int shiftamount_int;
@@ -41,10 +42,12 @@ void kill_error(char *);
 void get_offset(int);
 void input_file(char *);
 void cache_initialize();
+void run();
 
 void main(int argc, char *argv[])
 {
 	initialize(argc, argv);
+	run();
 }
 void initialize(int argc_proxy, char *argv_proxy[])
 {
@@ -189,7 +192,7 @@ void cache_initialize()
 	placeholder_node = pagetable_head;
 	//create the rest of the TLB
 	//-------------------------------------------------------
-	for(int i = 0; i < pagetable_int; i++)
+	for(int i = 1; i < pagetable_int; i++)
 	{
 		new_node = (struct pagetable_struct *)malloc(sizeof(struct pagetable_struct));
 		new_node->address_int = 0;
@@ -197,14 +200,114 @@ void cache_initialize()
 		new_node->pagetable_ptr = NULL;	
 		placeholder_node = new_node;	
 	}
+	pagetable_tail = placeholder_node;
+	//use "make debug" if you to print inputfile 
+	//-------------------------------------------------------
 	#if DEBUG==1
 		fprintf(logfile_ptr, "\nInitial Stack\n----------------\n");
-		pagetable_data *print_node;
+		pagetable_data *print_node = pagetable_head;
 		while(print_node)
 		{
 			fprintf(logfile_ptr, "[address=%#x]\n",print_node->address_int);
 			print_node = print_node->pagetable_ptr;
 		}
-		fprintf(logfile_ptr,"\n")
+		fprintf(logfile_ptr,"\n");
 	#endif
+}
+void run()
+{
+	inputfile_data *input_ptr = inputfile_head;	
+	pagetable_data *current_node, *prev_node, *temp_node, *top_node, *last_node;
+	bool found = false;
+	int test_address_int = 0;
+	int cache_address_int = 0;
+	
+	while(input_ptr)
+	{
+		current_node = (struct pagetable_struct *)malloc(sizeof(struct pagetable_struct));
+		temp_node = (struct pagetable_struct *)malloc(sizeof(struct pagetable_struct));
+		top_node = pagetable_head;
+		current_node = top_node;
+		test_address_int = input_ptr->address_int;
+		cache_address_int = current_node->address_int;
+		//LOOP TO FIND MATCHING ADDRESS IN TLB
+		//Test the first element in the TLB
+		//-------------------------------------------------------
+		if(test_address_int == cache_address_int)
+		{
+			printf("h\n");
+			hit_int++;
+			found = true;
+			fprintf(logfile_ptr, "\n!HIT!\n");
+		}
+		else
+		{
+			//Test the n+1 elements
+			//-----------------------------------------------
+			while(current_node->pagetable_ptr)
+			{
+				//cache traversal
+				//---------------------------------------
+				prev_node = current_node;
+				current_node = current_node->pagetable_ptr;
+				cache_address_int = current_node->address_int;
+				if(test_address_int == cache_address_int)
+				{
+					hit_int++;
+					found = true;
+					fprintf(logfile_ptr, "\n!HIT!\n");
+					temp_node->address_int = cache_address_int;
+					temp_node->pagetable_ptr = top_node->pagetable_ptr;
+					pagetable_head = temp_node;
+					prev_node->pagetable_ptr = current_node->pagetable_ptr;
+					free(current_node);
+					break;
+				}
+			}
+		}
+		//IF NO MATCHING ADDRESS IN TLB, THEN LOOP TO ADD THE ADDRESS
+		//------------------------------------------------------------
+		if(found == false)
+		{
+			miss_int++;
+
+			//[n]->[n-1]->...->[n-k]->NULL
+			// ^_________________|
+			last_node = current_node;
+
+			//[n]->[n-k]->NULL  [X_node]->???
+			// ^__________________|
+			current_node = top_node;
+
+			if(current_node->address_int == 0)
+			{
+				current_node->address_int = test_address_int;
+			}
+			else
+			{
+				temp_node->address_int = test_address_int;
+				temp_node->pagetable_ptr = top_node;
+				pagetable_head = temp_node;
+				prev_node->pagetable_ptr = NULL;
+			}
+			free(last_node);	
+		}
+		found = false;
+		input_ptr = input_ptr->address_ptr;
+	//Print stack after every iteration
+	//---------------------------------------------------------------------
+	#if DEBUG==1
+		fprintf(logfile_ptr, "\nStack after %#x\n----------------\n",test_address_int);
+		pagetable_data *print_node = pagetable_head;
+		while(print_node)
+		{
+			fprintf(logfile_ptr, "[address=%#x]\n",print_node->address_int);
+			print_node = print_node->pagetable_ptr;
+		}
+		fprintf(logfile_ptr,"\n");
+	#endif
+	}
+	//Print the result
+	//----------------------------------------------------------------------	
+	printf("Number of hits %d and number of misses %d\n",hit_int, miss_int); 
 }
