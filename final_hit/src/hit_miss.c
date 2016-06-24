@@ -150,9 +150,7 @@ void input_file(char *inputfile_name)
 		//----------------------------------------------
 		inputfile_data *placeholder_node, *new_node;
 		inputfile_head = (struct inputfile_struct *)malloc(sizeof(struct inputfile_struct));
-		//fscanf(tempfile_ptr, "%x\n",&inputfile_head->address_int);
 		fscanf(tempfile_ptr, "%x\n",&temp_int);
-		//inputfile_head->address_int = inputfile_head->address_int>>shiftamount_int;
 		inputfile_head->address_int = temp_int>>shiftamount_int;
 		inputfile_head->address_ptr = NULL;
 		placeholder_node = inputfile_head;
@@ -235,10 +233,9 @@ void run()
 		//-------------------------------------------------------
 		if(test_address_int == cache_address_int)
 		{
-			printf("h\n");
 			hit_int++;
 			found = true;
-			fprintf(logfile_ptr, "\n!HIT!\n");
+			fprintf(logfile_ptr, "\n!HIT!");
 		}
 		else
 		{
@@ -255,9 +252,9 @@ void run()
 				{
 					hit_int++;
 					found = true;
-					fprintf(logfile_ptr, "\n!HIT!\n");
+					fprintf(logfile_ptr, "\n!HIT!");
 					temp_node->address_int = cache_address_int;
-					temp_node->pagetable_ptr = top_node->pagetable_ptr;
+					temp_node->pagetable_ptr = top_node;
 					pagetable_head = temp_node;
 					prev_node->pagetable_ptr = current_node->pagetable_ptr;
 					free(current_node);
